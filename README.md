@@ -1,117 +1,117 @@
-# TRN 3.0 — Topological Resonance Networks (Redes de Resonancia Topológica)
+# TRN 3.0 — Topological Resonance Networks
 
-Implementación fiel de la especificación **TRN v3** (el paper en español, con los Anexos)
-replicada en Python, junto con experimentos que comparan **honestamente** contra un
-Transformer entrenado de verdad.
+A faithful implementation of the **TRN v3 specification** (the Spanish paper, including the
+appendices), replicated in Python, along with experiments that **honestly** compare it
+against a really-trained Transformer.
 
-> **Propósito:** reconstruir la teoría TRN *tal como el documento la describe* (no como la
-> traicionó una implementación apresurada), y medirla contra un baseline **entrenado**,
-> con números que se puedan volver a calcular.
+> **Purpose:** rebuild the TRN theory *as the document describes it* (not as a rushed
+> implementation betrayed it), and measure it against a **trained** baseline, with numbers
+> that can be recomputed.
 
 ---
 
-## Repositorio
+## Repository
 
 ```
 trn3.0/
-├── README.md                       # este documento
+├── README.md                       # this document
 ├── src/
-│   └── trn_theory.py               # implementación fiel de la especificación v3
+│   └── trn_theory.py               # faithful implementation of the v3 specification
 ├── experiments/
-│   ├── honest.rs                   # TRN vs red ENTRENADA (backprop) — XOR con generalización
-│   ├── prototype.rs                # TRN prototipo por clase (HD computing)
-│   ├── scan.rs                     # barrido estadístico de generalización (60 runs)
-│   └── diag.rs                     # diagnóstico: ¿los modelos colapsan a una clase?
-└── (LICENSE)
+│   ├── honest.rs                   # TRN vs TRAINED net (backprop) — XOR with generalization
+│   ├── prototype.rs                # class-prototype TRN (hyperdimensional computing)
+│   ├── scan.rs                     # statistical generalization sweep (60 runs)
+│   └── diag.rs                     # diagnostic: do the models collapse to one class?
+└── LICENSE
 ```
 
 ---
 
-## TL;DR — la historia honesta
+## TL;DR — the honest story
 
-1. **La teoría TRN v3 es coherente en su mecánica central.** La segmentación (Anexo A) +
-   binding XOR con reparación **captura de verdad el orden** de las secuencias.
-2. **`trn-2.1` comparaba el TRN contra un Transformer SIN ENTRENAR** y hardcodeaba cifras
-   (89%, 115%, latencia 10×): eso no es comparación, es un *strawman* (y números falsos).
-3. **`trn-1.0` decía la verdad** (FAIL honesto en XOR).
-4. **Cuando el TRN v3 se implementa fiel (segmentado), funciona** para lo que es: memoria
-   asociativa por contenido y discriminación posicional.
-
----
-
-## Lo que demuestra este repo
-
-### 1. Memoria asociativa (recuperación por superposición)
-Dado un prompt, el sistema devuelve la secuencia almacenada que más resuena (mayor
-popcount del AND), como describe la Fase 2 de la inferencia.
-
-### 2. Binding XOR + segmentación captura el ORDEN
-Prueba real (Python):
-
-```
-'juan golpeo pedro' contra sí mismo          = overlap 2000  (máximo, reproducible)
-'juan golpeo pedro' contra 'pedro golpeo juan' = overlap  281  (7× menor)
-```
-
-Dos frases con las mismas palabras en distinto orden quedan **casi-ortogonales**,
-exactamente lo que predice la Sección 4 y el Anexo A del documento.
-`"Juan golpeó a Pedro"` y `"Pedro golpeó a Juan"` producen firmas distintas. ✓
-
-### 3. La segmentación era la pieza que faltaba
-El Anexo A explica *por qué* el OR plano + thinning colapsa a selección casi aleatoria.
-La solución estructural — **1 bit activo por segmento** — resuelve el bundling.
-El código del `trn-2.1` no la implementaba; por eso fallaba.
+1. **TRN v3 theory is coherent at its core.** The segmentation (Appendix A) + XOR binding
+   with repair **does capture sequence order**.
+2. **`trn-2.1` compared TRN against an UNTRAINED Transformer** and hardcoded figures
+   (89%, 115%, 10× latency): that is not a comparison, it is a *strawman* (and fake numbers).
+3. **`trn-1.0` told the truth** (honest FAIL on XOR).
+4. **When TRN v3 is implemented faithfully (segmented), it works** for what it is:
+   content-addressable associative memory and positional discrimination.
 
 ---
 
-## Cómo correr
+## What this repo demonstrates
+
+### 1. Associative memory (superposition retrieval)
+Given a prompt, the system returns the stored sequence that resonates most (highest AND
+popcount), as described in inference Phase 2.
+
+### 2. XOR binding + segmentation captures ORDER
+Real run (Python):
+
+```
+'juan golpeo pedro'  vs itself                = overlap 2000  (max, reproducible)
+'juan golpeo pedro'  vs 'pedro golpeo juan'   = overlap  281  (7× smaller)
+```
+
+Two sentences with the same words in different order come out **almost orthogonal**,
+exactly as predicted by Section 4 and Appendix A of the paper.
+*"John hit Peter"* and *"Peter hit John"* produce distinct signatures. ✓
+
+### 3. Segmentation was the missing piece
+Appendix A explains *why* flat OR + thinning collapses to near-random selection at scale.
+The structural fix — **1 active bit per segment** — solves bundling.
+The `trn-2.1` code did not implement it; that is why it failed.
+
+---
+
+## How to run
 
 ```bash
-# implementación fiel de la teoría v3 (Python)
+# faithful implementation of the v3 theory (Python)
 python3 src/trn_theory.py
 
-# experimentos de comparación honesta (Rust)
-cargo run --release --bin prototype   # TRN prototipo vs red entrenada
-cargo run --release --bin scan        # barrido estadístico de generalización
-cargo run --release --bin diag        # diagnóstico de colapso de clase
-cargo run --release --bin honest      # benchmark principal honesto
+# honest comparison experiments (Rust)
+cargo run --release --bin prototype   # class-prototype TRN vs trained net
+cargo run --release --bin scan        # statistical generalization sweep
+cargo run --release --bin diag        # class-collapse diagnostic
+cargo run --release --bin honest      # main honest benchmark
 ```
 
 ---
 
-## Metodología honesta
+## Honest methodology
 
-| Aspecto | TRN v2.1 (original, con humo) | Este repo (TRN 3.0) |
-|---------|-------------------------------|---------------------|
-| Baseline Transformer | sin entrenar (50% ≈ azar) | entrenado de verdad |
-| Resultados | hardcodeados (89%, 115%, 10×) | calculados en vivo |
-| Segmentación (Anexo A) | no implementada | implementada |
-| Generalización XOR | "100%" falso | medida cruda y reportada |
-
----
-
-## Dónde TRN gana de verdad (y dónde NO)
-
-| Tarea | TRN | Transformer |
-|-------|-----|-------------|
-| Memoria asociativa / matching | **excelente** | ok |
-| Discriminación posicional (orden) | **bien** | bien |
-| Clasificación de patrones | excelente | bien |
-| Eficiencia / edge / sin GPU | **gana por goleada** | caro |
-| Lenguaje generativo | N/A | **el rey** |
-| No-linealidad / generalización fina | no | **sí (capa oculta)** |
-
-**Conclusión honesta:** el TRN no "supera al Transformer" en lenguaje generativo — nadie
-con datos reales puede afirmarlo. Pero es una **arquitectura de memoria asociativa dispersa
-legítima y eficiente** para clasificación de patrones, matching y edge computing.
+| Aspect | TRN v2.1 (original, with smoke) | This repo (TRN 3.0) |
+|--------|--------------------------------|-----------------------|
+| Transformer baseline | untrained (50% ≈ random) | really trained |
+| Results | hardcoded (89%, 115%, 10×) | computed live |
+| Segmentation (Appendix A) | not implemented | implemented |
+| XOR generalization | fake "100%" | raw measured & reported |
 
 ---
 
-## Créditos
-- **Teoría y especificación:** Glize Labs Research Team (Samuel).
-- **Reconstrucción fiel y benchmarks honestos:** Zoe (asistente, mano derecha) — reparó la
-  implementación para que coincida con el documento v3, y corrigió la comparación
-  metodológica contra un Transformer entrenado.
+## Where TRN genuinely wins (and where it does NOT)
 
-## Licencia
-MIT (ver `LICENSE`).
+| Task | TRN | Transformer |
+|------|-----|-------------|
+| Associative memory / matching | **excellent** | ok |
+| Positional discrimination (order) | **good** | good |
+| Pattern classification | excellent | good |
+| Efficiency / edge / no GPU | **wins by a lot** | expensive |
+| Generative language | N/A | **the king** |
+| Nonlinearity / fine generalization | no | **yes (hidden layer)** |
+
+**Honest conclusion:** TRN does not "beat the Transformer" at generative language — nobody
+with real data can claim that. But it is a **legitimate, efficient sparse associative-memory
+architecture** for pattern classification, matching, and edge computing.
+
+---
+
+## Credits
+- **Theory & specification:** Glize Labs Research Team.
+- **Faithful reconstruction & honest benchmarks:** Zoe (assistant) — repaired the
+  implementation so it matches the v3 document, and fixed the methodological comparison
+  against a trained Transformer.
+
+## License
+MIT (see `LICENSE`).
